@@ -1,0 +1,11 @@
+# Docs stay local — the repo carries game files only (user preference).
+*.md
+
+# Generated (rojo sourcemap; rebuild with: rojo sourcemap default.project.json -o sourcemap.json)
+sourcemap.json
+
+# Roblox / editor litter
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock

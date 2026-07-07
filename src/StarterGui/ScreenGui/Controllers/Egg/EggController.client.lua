@@ -1,0 +1,17 @@
+--!strict
+-- =============================================================================
+-- EggController — STUB (scaffold session 1; implement session 3).
+-- [Contract] Owns: the egg shop modal, the policy-required odds popup (exact
+--   percentages from EggConfig — the same table the server rolls from), and
+--   the hatch reveal overlay (DESIGN.md §7.2/7.3).
+--
+-- [Contract] Pattern (all client domains): a thin orchestrator (this file) +
+--   focused ctx-based ModuleScripts it coordinates. Call modules through their
+--   ctx.<module> handle — NEVER re-alias them as top-level locals (the
+--   200-local-cap lesson, WORKFLOW.md).
+-- [Contract] Never: constructs GuiObjects — ALL UI instances are authored by
+--   the user in Studio; code owns logic only (WORKFLOW.md). New UI needs a
+--   default-color Studio template handed off for styling.
+-- =============================================================================
+
+-- Stub: intentionally no behavior this session.

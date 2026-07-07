@@ -1,0 +1,4 @@
+std = "roblox"
+
+# Vendored third-party code is never linted (and never edited — see WORKFLOW.md).
+exclude = ["src/ServerScriptService/Vendor/**"]
