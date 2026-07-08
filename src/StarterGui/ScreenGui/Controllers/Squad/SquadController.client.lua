@@ -1,6 +1,6 @@
 --!strict
 -- =============================================================================
--- SquadController — STUB (scaffold session 1; implement session 3).
+-- SquadController — thin orchestrator for the squad domain.
 -- [Contract] Owns: the equipped-squad chips bar and the client follower sim
 --   (spring-follow, no collisions, tween-animated — replicates nothing;
 --   DESIGN.md §5 follower sim, §7.6).
@@ -14,4 +14,17 @@
 --   default-color Studio template handed off for styling.
 -- =============================================================================
 
--- Stub: intentionally no behavior this session.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+
+local ctx = {} :: { [string]: any }
+ctx.gui = script:FindFirstAncestorOfClass("ScreenGui") :: ScreenGui
+ctx.state = require(Shared:WaitForChild("ClientState")) :: any
+ctx.modals = require(script.Parent.Parent:WaitForChild("Modals"):WaitForChild("ModalCoordinator")) :: any
+
+ctx.squadBar = require(script.Parent:WaitForChild("SquadBar")) :: any
+ctx.followers = require(script.Parent:WaitForChild("Followers")) :: any
+
+ctx.squadBar.Init(ctx)
+ctx.followers.Init(ctx)

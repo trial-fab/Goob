@@ -416,6 +416,35 @@ T.guid = function(value: any): (boolean, string?)
 	return true, nil
 end :: Check
 
+-- A dense array of at most maxLength elements, each passing `inner`. Rejects
+-- dictionary keys / holes (mixed tables are an exploit smell, same posture as
+-- T.args rejecting padded arguments). E.g. TradeSetOffer's slimeId list:
+--   T.arrayOf(T.guid, 4)
+function T.arrayOf(inner: Check, maxLength: number): Check
+	return function(value: any): (boolean, string?)
+		if typeof(value) ~= "table" then
+			return false, "expected an array"
+		end
+		local n = 0
+		for _ in value do
+			n += 1
+		end
+		if n ~= #value then
+			return false, "array has non-sequential keys"
+		end
+		if n > maxLength then
+			return false, ("array longer than %d"):format(maxLength)
+		end
+		for i = 1, n do
+			local ok, why = inner(value[i])
+			if not ok then
+				return false, ("element #%d: %s"):format(i, why or "invalid")
+			end
+		end
+		return true, nil
+	end
+end
+
 -- Argument may be nil OR pass the inner check (trailing optional params).
 function T.optional(inner: Check): Check
 	return function(value: any): (boolean, string?)

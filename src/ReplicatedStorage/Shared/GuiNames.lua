@@ -32,4 +32,20 @@ return table.freeze({
 	IndexButton = "IndexButton",
 	TradeButton = "TradeButton",
 	ExploreButton = "ExploreButton",
+	QuestsButton = "QuestsButton", -- menu pill (Menu opens, Quests renders)
+	DecorButton = "DecorButton", -- build-mode entry (Menu opens, Decor renders)
+
+	-- HUD (Hud binds counters; Egg/Inventory flows re-anchor toasts around it)
+	HudFrame = "HudFrame",
+	GooLabel = "GooLabel",
+	GemsLabel = "GemsLabel",
+	GpsLabel = "GpsLabel",
+
+	-- modal shells opened by Menu, owned by their domain controllers
+	EggShop = "EggShop",
+	Inventory = "Inventory",
+	ExplorePanel = "ExplorePanel",
+	QuestsModal = "QuestsModal",
+	StreakModal = "StreakModal",
+	DecorCatalog = "DecorCatalog",
 })

@@ -21,8 +21,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
 local Attrs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Attrs"))
+local SlimeConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("SlimeConfig"))
+local FoodConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("FoodConfig"))
+local MutationConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MutationConfig"))
+local NatureConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NatureConfig"))
 local DataService = require(script.Parent:WaitForChild("DataService"))
 local RateLimiter = require(script.Parent:WaitForChild("RateLimiter"))
+local SlimeService = require(script.Parent:WaitForChild("SlimeService"))
+local ProductionService = require(script.Parent:WaitForChild("ProductionService"))
+local ZoneService = require(script.Parent:WaitForChild("ZoneService"))
+local WildSlimeService = require(script.Parent:WaitForChild("WildSlimeService"))
+local OfflineEarningsService = require(script.Parent:WaitForChild("OfflineEarningsService"))
 
 local TestCommandService = {}
 
@@ -54,9 +63,103 @@ local function handleCommand(player: Player, message: string)
 		return
 	end
 
-	-- !goo <n> — set Goo. Direct profile pokes are acceptable ONLY here and only
-	-- until ProductionService/HatchService own these fields (session 3 replaces
-	-- these with service-routed grants).
+	-- !slime <speciesId> [mutation] [nature] — mint through SlimeService (the
+	-- owning service; never a direct profile poke).
+	local speciesId, mutationArg, natureArg = string.match(message, "^!slime%s+(%S+)%s*(%S*)%s*(%S*)$")
+	if speciesId then
+		local data = DataService.GetData(player)
+		local species = (SlimeConfig.Species :: { [string]: SlimeConfig.Species })[speciesId]
+		if not (data and species) then
+			print("[TestCommand] unknown species: " .. tostring(speciesId))
+			return
+		end
+		local mutation = if mutationArg ~= "" then mutationArg :: string else "none"
+		if not (MutationConfig.Mutations :: { [string]: any })[mutation] then
+			print("[TestCommand] unknown mutation: " .. mutation)
+			return
+		end
+		local nature = if natureArg ~= "" then natureArg :: string else "bouncy"
+		if not (NatureConfig.Natures :: { [string]: any })[nature] then
+			print("[TestCommand] unknown nature: " .. nature)
+			return
+		end
+		local slimeId, toStorage = SlimeService.Mint(player, data, speciesId, mutation, nature, "egg")
+		print(
+			("[TestCommand] minted %s (%s/%s/%s) -> %s"):format(
+				slimeId,
+				speciesId,
+				mutation,
+				nature,
+				if toStorage then "storage" else "ranch"
+			)
+		)
+		return
+	end
+
+	-- !food <foodId> <n> — grant special foods.
+	local foodId, foodCountText = string.match(message, "^!food%s+(%S+)%s+(%S+)$")
+	if foodId then
+		local data = DataService.GetData(player)
+		local count = tonumber(foodCountText)
+		if data and count and (FoodConfig.Foods :: { [string]: any })[foodId] then
+			data.Foods[foodId] = (data.Foods[foodId] or 0) + math.floor(count)
+			SlimeService.PushState(player)
+			print(("[TestCommand] %s now has %d %s"):format(player.Name, data.Foods[foodId], foodId))
+		end
+		return
+	end
+
+	-- !gps — print the production authority's number for this player.
+	if message == "!gps" then
+		print(("[TestCommand] %s gps = %.2f"):format(player.Name, ProductionService.GetGps(player)))
+		return
+	end
+
+	-- !playtime <min> — set lifetime playtime (the trade gate's clock).
+	local playtimeText = string.match(message, "^!playtime%s+(%S+)$")
+	if playtimeText then
+		local data = DataService.GetData(player)
+		local minutes = tonumber(playtimeText)
+		if data and minutes then
+			data.Stats.PlayTimeMin = math.floor(minutes)
+			print(("[TestCommand] %s PlayTimeMin = %d"):format(player.Name, data.Stats.PlayTimeMin))
+		end
+		return
+	end
+
+	-- !wild <zoneId> — force a wild spawn through WildSlimeService.
+	local wildZone = string.match(message, "^!wild%s+(%S+)$")
+	if wildZone then
+		local spawn = WildSlimeService.ForceSpawn(wildZone)
+		print(
+			if spawn
+				then ("[TestCommand] wild %s (%s) in %s"):format(spawn.Id, spawn.SpeciesId, wildZone)
+				else "[TestCommand] unknown zone: " .. wildZone
+		)
+		return
+	end
+
+	-- !unlock <zoneId> — force a zone unlock through ZoneService's seam.
+	local unlockZone = string.match(message, "^!unlock%s+(%S+)$")
+	if unlockZone then
+		ZoneService._forceUnlock(player, unlockZone)
+		print("[TestCommand] unlocked " .. unlockZone .. " for " .. player.Name)
+		return
+	end
+
+	-- !offline <seconds> — simulate an away window through the owning service.
+	local offlineText = string.match(message, "^!offline%s+(%S+)$")
+	if offlineText then
+		local seconds = tonumber(offlineText)
+		if seconds then
+			local earned = OfflineEarningsService._simulateAway(player, math.floor(seconds))
+			print(("[TestCommand] simulated %ds away -> +%d pending Goo"):format(seconds, earned))
+		end
+		return
+	end
+
+	-- !goo <n> — set Goo (the one sanctioned direct poke: it IS the faucet
+	-- being tested; projection + save mirror the real grant path).
 	local amountText = string.match(message, "^!goo%s+(.+)$")
 	if amountText then
 		local amount = parseAmount(amountText)
@@ -64,6 +167,7 @@ local function handleCommand(player: Player, message: string)
 		if amount and data then
 			data.Goo = amount
 			player:SetAttribute(Attrs.Goo, amount) -- projection only, never read back
+			SlimeService.PushState(player)
 			DataService.ForceSave(player)
 			print(("[TestCommand] set Goo for %s to %d"):format(player.Name, amount))
 		end
@@ -78,6 +182,7 @@ local function handleCommand(player: Player, message: string)
 		if amount and data then
 			data.Gems = amount
 			player:SetAttribute(Attrs.Gems, amount)
+			SlimeService.PushState(player)
 			DataService.ForceSave(player)
 			print(("[TestCommand] set Gems for %s to %d"):format(player.Name, amount))
 		end

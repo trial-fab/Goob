@@ -1,6 +1,6 @@
 --!strict
 -- =============================================================================
--- DecorController — STUB (scaffold session 1; implement session 3).
+-- DecorController — thin orchestrator for the decor build-mode domain.
 -- [Contract] Owns: the decor build mode — the ported Build View top-down camera
 --   + grid ghost preview + placement stack (ClickGame BuildViewCamera/
 --   GridPlacement adapted), catalog drawer wiring (DESIGN.md §7.10, §6).
@@ -14,4 +14,19 @@
 --   default-color Studio template handed off for styling.
 -- =============================================================================
 
--- Stub: intentionally no behavior this session.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+
+local ctx = {} :: { [string]: any }
+ctx.gui = script:FindFirstAncestorOfClass("ScreenGui") :: ScreenGui
+ctx.state = require(Shared:WaitForChild("ClientState")) :: any
+ctx.modals = require(script.Parent.Parent:WaitForChild("Modals"):WaitForChild("ModalCoordinator")) :: any
+
+ctx.buildCamera = require(script.Parent:WaitForChild("BuildCamera")) :: any
+ctx.placement = require(script.Parent:WaitForChild("Placement")) :: any
+ctx.catalog = require(script.Parent:WaitForChild("Catalog")) :: any
+
+ctx.buildCamera.Init(ctx)
+ctx.placement.Init(ctx)
+ctx.catalog.Init(ctx)

@@ -35,6 +35,16 @@ return table.freeze({
 	-- HUD projections (server writes on the Player; profile table is the truth)
 	Goo = "Goo",
 	Gems = "Gems",
+	Gps = "Gps", -- ProductionService writes; HUD renders NumberFormat.rate
+
+	-- world projections
+	PlotIndex = "PlotIndex", -- PlotService writes on the Player (1..12)
+	SquadJson = "SquadJson", -- SquadService writes on the Player; every client's
+	-- follower sim reads it to render other players' parades (composition only —
+	-- motion itself is never replicated)
+
+	-- client-local UI state (written/read on the ScreenGui by controllers)
+	PlacementActive = "PlacementActive", -- Decor build mode owns camera/input
 
 	-- debug / test harness (TestCommandService writes; tests read)
 	DebugPingCount = "DebugPingCount",

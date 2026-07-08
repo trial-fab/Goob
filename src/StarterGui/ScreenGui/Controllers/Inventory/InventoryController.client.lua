@@ -1,6 +1,6 @@
 --!strict
 -- =============================================================================
--- InventoryController — STUB (scaffold session 1; implement session 3).
+-- InventoryController — thin orchestrator for the inventory domain.
 -- [Contract] Owns: the slime-card grid modal — Ranch/Store toggle, Equip,
 --   Release, Lock, Rename actions (all server-validated via Net RemoteFunctions;
 --   DESIGN.md §7.4).
@@ -14,4 +14,14 @@
 --   default-color Studio template handed off for styling.
 -- =============================================================================
 
--- Stub: intentionally no behavior this session.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+
+local ctx = {} :: { [string]: any }
+ctx.gui = script:FindFirstAncestorOfClass("ScreenGui") :: ScreenGui
+ctx.state = require(Shared:WaitForChild("ClientState")) :: any
+ctx.modals = require(script.Parent.Parent:WaitForChild("Modals"):WaitForChild("ModalCoordinator")) :: any
+
+ctx.grid = require(script.Parent:WaitForChild("InventoryGrid")) :: any
+ctx.grid.Init(ctx)

@@ -29,7 +29,7 @@ return table.freeze({
 	EquipSquad = "EquipSquad", -- (slimeIds) full desired squad; server validates slots
 	BefriendAttempt = "BefriendAttempt", -- (wildId, foodId)
 	GatherNode = "GatherNode", -- (nodeId)
-	ShrineRoll = "ShrineRoll", -- (shrineId, slimeId, offering foodIds)
+	ShrineRoll = "ShrineRoll", -- (zoneId, slimeId); offering = the zone's food × Shrine.OfferingFoods
 	BuyDecor = "BuyDecor", -- (decorId)
 	PlaceDecor = "PlaceDecor", -- (decorInstanceId, gridX, gridZ, rotY)
 	RecallDecor = "RecallDecor", -- (decorInstanceId)
@@ -46,7 +46,16 @@ return table.freeze({
 	TradeAccept = "TradeAccept", -- (tradeId)
 	TradeCancel = "TradeCancel", -- (tradeId)
 
+	-- client -> server pull (RemoteFunction): one-shot state fetch at client
+	-- boot, in case the client connected after the load-time StateSync push.
+	GetState = "GetState",
+
 	-- server -> client pushes (RemoteEvent)
+	-- StateSync: the batched UI projection of the profile (slimes, roster,
+	-- squad, foods, egg counts, zones, quests, streak). Server-owned services
+	-- push it after mutations; clients render it and NEVER send it back
+	-- (§8 W3 — projections are write-through, one direction).
+	StateSync = "StateSync",
 	ProductionEarnings = "ProductionEarnings", -- ONE batched per-player tick (§8 W5)
 	BlobSpawned = "BlobSpawned",
 	BlobRemoved = "BlobRemoved",

@@ -39,6 +39,7 @@ local DecorConfig = require("../src/ReplicatedStorage/Shared/DecorConfig")
 local RanchConfig = require("../src/ReplicatedStorage/Shared/RanchConfig")
 local DailyRewardConfig = require("../src/ReplicatedStorage/Shared/DailyRewardConfig")
 local QuestConfig = require("../src/ReplicatedStorage/Shared/QuestConfig")
+local MoltConfig = require("../src/ReplicatedStorage/Shared/MoltConfig")
 
 local Species = SlimeConfig.Species :: { [string]: SlimeConfig.Species }
 local Eggs = EggConfig.Eggs :: { [string]: EggConfig.Egg }
@@ -52,11 +53,11 @@ local OFFLINE_RATE = 0.5
 local OFFLINE_CAP_SECONDS = 2 * 3600
 
 -- Molt is v1-not-MVP (§2); the sim models it because the §3 week-2-4 "first
--- Molt" beat depends on it. Requirement: lifetime Goo earned, x4 per Molt
--- taken (a flat requirement would allow instant re-molts). Recommendation
--- recorded in docs/economy.md; the config home is a session-3 decision.
-local MOLT_LIFETIME_REQ = 500e6
-local MOLT_REQ_GROWTH = 5
+-- Molt" beat depends on it. Session 3 gave the requirement its config home
+-- (Shared/MoltConfig — the same file the future Molt service enforces), so
+-- the sim now reads the shipping numbers instead of a private copy (§8 W6).
+local MOLT_LIFETIME_REQ = MoltConfig.LifetimeGooBase
+local MOLT_REQ_GROWTH = MoltConfig.RequirementGrowth
 
 local DAYS = 28
 local DAY = 24 * 3600

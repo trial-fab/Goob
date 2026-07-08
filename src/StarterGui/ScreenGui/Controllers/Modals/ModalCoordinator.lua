@@ -18,6 +18,9 @@
 --   local slot = Modals.register("EggShop", function()
 --       -- another modal claimed the slot — close myself
 --       if eggShopVisible then setEggShopVisible(false) end
+--   end, function()
+--       -- (optional) someone requested me open (Menu bottom bar) — show myself
+--       setEggShopVisible(true)
 --   end)
 --   -- on open:  slot.open()      -- claim the slot for "EggShop"
 --   -- on close: slot.close()     -- release the slot iff "EggShop" still holds it
@@ -25,6 +28,11 @@
 -- `slot.close()` is safe to call unconditionally from a close path: it only
 -- clears the attribute when this modal currently owns it, so the foreign-close
 -- callback can route through it without re-claiming or fighting the new owner.
+--
+-- Session-3 addition (SlimeGame): `ModalCoordinator.request(name)` lets a
+-- non-owner (the Menu bottom bar) open a modal by name; the owner's
+-- onOpenRequested callback fires via the same shared observer. This file
+-- remains the ONLY place that touches the OpenModal attribute.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -42,8 +50,13 @@ export type ModalSlot = {
 	close: () -> (),
 }
 
--- name -> onForeignOpen callback ("you are no longer the open modal").
-local registry: { [string]: () -> () } = {}
+type Entry = {
+	onForeignOpen: () -> (),
+	onOpenRequested: (() -> ())?,
+}
+
+-- name -> callbacks (foreign-open always; open-requested optional).
+local registry: { [string]: Entry } = {}
 
 local function current(): string
 	local value = screenGui:GetAttribute(Attrs.OpenModal)
@@ -51,24 +64,28 @@ local function current(): string
 end
 
 -- One shared observer drives every registered modal. When the slot changes,
--- every registered modal that is NOT the current owner is told to close itself.
+-- every registered modal that is NOT the current owner is told to close
+-- itself, and the new owner (if it asked for the signal) is told to open.
 -- Each callback self-guards on its own open state, so this is a no-op for
--- modals that are already closed.
+-- modals already in the right state.
 screenGui:GetAttributeChangedSignal(Attrs.OpenModal):Connect(function()
 	local owner = current()
-	for name, onForeignOpen in pairs(registry) do
+	for name, entry in pairs(registry) do
 		if name ~= owner then
-			onForeignOpen()
+			entry.onForeignOpen()
+		elseif entry.onOpenRequested then
+			entry.onOpenRequested()
 		end
 	end
 end)
 
 -- Register a modal under `name`. `onForeignOpen` is called whenever another
--- modal claims the single open slot (i.e. this modal should close itself).
-function ModalCoordinator.register(name: string, onForeignOpen: () -> ()): ModalSlot
+-- modal claims the single open slot (i.e. this modal should close itself);
+-- `onOpenRequested` (optional) whenever someone requests THIS modal open.
+function ModalCoordinator.register(name: string, onForeignOpen: () -> (), onOpenRequested: (() -> ())?): ModalSlot
 	assert(type(name) == "string" and name ~= NONE, "ModalCoordinator.register: name must be a non-empty string")
 	assert(type(onForeignOpen) == "function", "ModalCoordinator.register: onForeignOpen must be a function")
-	registry[name] = onForeignOpen
+	registry[name] = { onForeignOpen = onForeignOpen, onOpenRequested = onOpenRequested }
 
 	return {
 		-- Claim the single slot for this modal. Sibling modals are closed via
@@ -85,6 +102,17 @@ function ModalCoordinator.register(name: string, onForeignOpen: () -> ()): Modal
 			end
 		end,
 	}
+end
+
+-- Open a modal BY NAME from outside its owner (Menu bottom bar). Routes
+-- through the same attribute + observer as slot.open().
+function ModalCoordinator.request(name: string)
+	screenGui:SetAttribute(Attrs.OpenModal, name)
+end
+
+-- Close whatever is open (Menu close-all, Decor build-mode entry).
+function ModalCoordinator.closeAll()
+	screenGui:SetAttribute(Attrs.OpenModal, NONE)
 end
 
 -- Name of the modal that currently holds the open slot ("" if none).

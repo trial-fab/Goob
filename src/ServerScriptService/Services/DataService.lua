@@ -42,9 +42,14 @@ local PROFILE_TEMPLATE = {
 	Gems = 0,
 	Molts = 0,
 	-- [slimeId (GUID)] = { Sp = speciesId, Mu = mutation, Nt = nature, St = stage,
-	--                      Fed = food progress, T = hatch tick, Lk = locked,
-	--                      Src = "egg"|"wild" }
+	--                      Fed = feed progress toward next stage, T = hatch tick,
+	--                      StT = tick the current stage was entered (stage-up
+	--                      timers, GrowthService), Lk = locked, Src = "egg"|"wild",
+	--                      Nm = filtered custom name (nil until renamed) }
 	Slimes = {} :: { [string]: any },
+	-- [eggId] = lifetime purchase count; EggConfig.Cost's ladder input. Survives
+	-- Molt (resetting it would reopen the idle-inflation valve — docs/economy.md).
+	EggCounts = {} :: { [string]: number },
 	Ranch = {
 		Roster = {} :: { string }, -- slimeIds producing on the plot (cap = Slots)
 		Slots = 8,
@@ -56,7 +61,9 @@ local PROFILE_TEMPLATE = {
 	SquadSlots = 2,
 	Foods = {} :: { [string]: number }, -- special foods are items, not a currency
 	Zones = {
-		Unlocked = { MeadowWilds = true } :: { [string]: boolean },
+		-- ZoneService computes unlocks from owned-slime counts (ZoneConfig
+		-- thresholds) and persists them here — no zone is pre-unlocked.
+		Unlocked = {} :: { [string]: boolean },
 		ShrineCooldowns = {} :: { [string]: number },
 	},
 	Index = {} :: { [string]: boolean }, -- ["speciesId:mutation"] = discovered
@@ -67,7 +74,12 @@ local PROFILE_TEMPLATE = {
 	Streak = {} :: { [string]: any }, -- DailyRewardService (session 3)
 	Quests = {} :: { [string]: any }, -- QuestService (session 3)
 	Receipts = {} :: { string }, -- purchase ids, buffered IN-profile (§8 W2)
-	Stats = { GooEarned = 0, Hatches = 0, Befriends = 0, PlayTimeMin = 0 },
+	-- HatchMutations counts hatch rolls that produced any mutation — the pity
+	-- rule (MutationConfig.PityFirstShinyByHatch) fires while it is still 0.
+	Stats = { GooEarned = 0, Hatches = 0, Befriends = 0, PlayTimeMin = 0, HatchMutations = 0 },
+	-- Offline Goo accrued (OfflineEarningsService) awaiting the claim modal;
+	-- persisted so leaving without claiming never loses it.
+	OfflinePendingGoo = 0,
 	LastSeen = 0,
 	TradeHistory = {} :: { string }, -- last 20 tradeIds (idempotency + support ledger)
 }

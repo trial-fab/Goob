@@ -26,6 +26,7 @@ local RanchConfig = require("../src/ReplicatedStorage/Shared/RanchConfig")
 local DailyRewardConfig = require("../src/ReplicatedStorage/Shared/DailyRewardConfig")
 local QuestConfig = require("../src/ReplicatedStorage/Shared/QuestConfig")
 local ProductionFormula = require("../src/ReplicatedStorage/Shared/ProductionFormula")
+local MoltConfig = require("../src/ReplicatedStorage/Shared/MoltConfig")
 
 local failures = 0
 local function check(ok: boolean, label: string)
@@ -362,6 +363,23 @@ do
 		end
 	end
 	check(rewardOk, "streak calendar (7 days) + quest rewards reference real ids")
+end
+
+-- ------------------------------------------------------------------- molt --
+print("MoltConfig")
+do
+	-- The sim's week-2-4 "first Molt" verdicts assume exactly these numbers
+	-- (docs/economy.md): a drifted requirement silently re-tunes the month.
+	check(MoltConfig.LifetimeGooBase == 500000000, "Molt requirement base is the tuned 500M")
+	check(MoltConfig.RequirementGrowth > 1, "Molt requirement grows per Molt (no instant re-molts)")
+	check(
+		MoltConfig.Requirement(1) == MoltConfig.LifetimeGooBase * MoltConfig.RequirementGrowth,
+		"Requirement(n) follows base * growth^n"
+	)
+	-- The multiplier itself must stay ProductionFormula's linear ladder (§3
+	-- risk 1: 2^molts was rejected); MoltConfig must never grow its own copy.
+	check(ProductionFormula.MoltMult(3) == 4, "MoltMult stays linear (1 + molts)")
+	check((MoltConfig :: any).Mult == nil and (MoltConfig :: any).MoltMult == nil, "MoltConfig carries no multiplier")
 end
 
 print("")

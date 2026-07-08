@@ -1,6 +1,6 @@
 --!strict
 -- =============================================================================
--- EggController — STUB (scaffold session 1; implement session 3).
+-- EggController — thin orchestrator for the egg shop domain.
 -- [Contract] Owns: the egg shop modal, the policy-required odds popup (exact
 --   percentages from EggConfig — the same table the server rolls from), and
 --   the hatch reveal overlay (DESIGN.md §7.2/7.3).
@@ -14,4 +14,19 @@
 --   default-color Studio template handed off for styling.
 -- =============================================================================
 
--- Stub: intentionally no behavior this session.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+
+local ctx = {} :: { [string]: any }
+ctx.gui = script:FindFirstAncestorOfClass("ScreenGui") :: ScreenGui
+ctx.state = require(Shared:WaitForChild("ClientState")) :: any
+ctx.modals = require(script.Parent.Parent:WaitForChild("Modals"):WaitForChild("ModalCoordinator")) :: any
+
+ctx.hatchReveal = require(script.Parent:WaitForChild("HatchReveal")) :: any
+ctx.oddsPopup = require(script.Parent:WaitForChild("OddsPopup")) :: any
+ctx.eggShop = require(script.Parent:WaitForChild("EggShop")) :: any
+
+ctx.hatchReveal.Init(ctx)
+ctx.oddsPopup.Init(ctx)
+ctx.eggShop.Init(ctx)

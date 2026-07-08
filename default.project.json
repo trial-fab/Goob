@@ -13,6 +13,10 @@
     "StarterGui": {
       "ScreenGui": {
         "$className": "ScreenGui",
+        "$properties": {
+          "ResetOnSpawn": false,
+          "IgnoreGuiInset": true
+        },
         "Controllers": {
           "$path": "src/StarterGui/ScreenGui/Controllers"
         }
